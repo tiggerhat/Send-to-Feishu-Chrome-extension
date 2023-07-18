@@ -1,2 +1,2 @@
 all:
-	zip -r ../Send-to-Telegram-Chrome-extension.zip ./*
+	zip -r ../Send-to-Feishu-Chrome-extension.zip ./*

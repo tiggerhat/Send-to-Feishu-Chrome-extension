@@ -1,5 +1,5 @@
-var open_options = function(msg) {
-    if(msg) {
+var open_options = function (msg) {
+    if (msg) {
         localStorage._options_msg = msg;
     }
     if (chrome.runtime.openOptionsPage) {
@@ -9,144 +9,144 @@ var open_options = function(msg) {
         url: chrome.runtime.getURL('options.html')
     });
 },
-combo_valid = function() {
-    var valid = localStorage.valid || '',
-        token = localStorage.token || '',
-        userkey = localStorage.userkey || '';
+    combo_valid = function () {
+        var valid = localStorage.valid || '',
+            token = localStorage.token || '';
 
-    if (!valid || valid !== token + userkey) {
-        open_options('Please check your configuration!');
-        return false;
-    }
-    return true;
-},
-show_badge_text = function(color, text, timeout) {
-    chrome.browserAction.setBadgeBackgroundColor({
-        'color': color
-    });
-    chrome.browserAction.setBadgeText({
-        'text': text
-    });
-    setTimeout(function() {
-        chrome.browserAction.setBadgeText({
-            'text': ''
+        if (!valid || valid !== token) {
+            open_options('Please check your configuration!');
+            return false;
+        }
+        return true;
+    },
+    show_badge_text = function (color, text, timeout) {
+        chrome.browserAction.setBadgeBackgroundColor({
+            'color': color
         });
-    }, timeout * 1000);
-},
-push_message = function(source, tab, selection, device) {
-    if (!combo_valid()) {
-        return false;
-    }
+        chrome.browserAction.setBadgeText({
+            'text': text
+        });
+        setTimeout(function () {
+            chrome.browserAction.setBadgeText({
+                'text': ''
+            });
+        }, timeout * 1000);
+    },
+    push_message = function (source, tab, selection, device) {
+        if (!combo_valid()) {
+            return false;
+        }
 
-    // var params = 'token=' + encodeURIComponent(localStorage.token) +
-    //              '&user=' + encodeURIComponent(localStorage.userkey) +
-    //              '&title=' + encodeURIComponent(tab.title) +
-    //              '&url=' + encodeURIComponent(tab.url.substring(0, 500)) +
-    //              '&url_title=' + encodeURIComponent('Open the link');
+        // var params = 'token=' + encodeURIComponent(localStorage.token) +
+        //              '&user=' + encodeURIComponent(localStorage.userkey) +
+        //              '&title=' + encodeURIComponent(tab.title) +
+        //              '&url=' + encodeURIComponent(tab.url.substring(0, 500)) +
+        //              '&url_title=' + encodeURIComponent('Open the link');
 
-    // if (source === 'badge' && localStorage.devices_badge) {
-    //     device = localStorage.devices_badge;
-    // }
+        // if (source === 'badge' && localStorage.devices_badge) {
+        //     device = localStorage.devices_badge;
+        // }
 
-    // if (device) {
-    //     params += '&device=' + encodeURIComponent(device);
-    // }
+        // if (device) {
+        //     params += '&device=' + encodeURIComponent(device);
+        // }
 
-    // if (selection) {
-    //     params += '&message=' + encodeURIComponent(selection.substring(0, 512));
-    // } else {
-    //     params += '&message=' + encodeURIComponent(tab.url.substring(0, 500));
-    // }
+        // if (selection) {
+        //     params += '&message=' + encodeURIComponent(selection.substring(0, 512));
+        // } else {
+        //     params += '&message=' + encodeURIComponent(tab.url.substring(0, 500));
+        // }
 
-    // if (localStorage.sound) {
-    //     params += '&sound=' + encodeURIComponent(localStorage.sound);
-    // }
+        // if (localStorage.sound) {
+        //     params += '&sound=' + encodeURIComponent(localStorage.sound);
+        // }
 
-    if (selection) {
-        var text = encodeURIComponent(selection.substring(0, 512));
-    } else {
-        var text = encodeURIComponent(tab.url.substring(0, 500));
-    }
+        if (selection) {
+            var text = encodeURIComponent(selection.substring(0, 512));
+        } else {
+            var text = encodeURIComponent(tab.url.substring(0, 500));
+        }
 
-    var req = new XMLHttpRequest();
-    var url = 'https://api.telegram.org/bot' + 
-                     localStorage.token + 
-                    '/sendMessage';
-    url += '?chat_id=' + encodeURIComponent(localStorage.userkey);
-    url += '&text=' + text;
-    url += encodeURIComponent('\n\nFrom: \n' + tab.title + '\n' + tab.url)
-    req.open('GET', url, true);
-    req.setRequestHeader("Content-Type", "application/json");
-    req.send();
+        var req = new XMLHttpRequest();
+        var url = 'https://open.feishu.cn/open-apis/bot/v2/hook/' + localStorage.token;
+        let data = JSON.stringify({
+            "msg_type": "text",
+            "content": {
+                "text": '\n\nFrom: \n' + tab.title + '\n' + tab.url
+            }
+        });
+        req.open('POST', url, true);
+        req.setRequestHeader("Content-Type", "application/json");
+        req.send(data);
 
-    req.onreadystatechange = function() {
-        if (req.readyState === 4) {
-            if (req.status === 200) {
-                show_badge_text('#006400', 'OK', 2);
-            } else {
-                var response = JSON.parse(req.responseText);
-                if(response.errors) {
-                    alert('Error: ' + response.errors);
+        req.onreadystatechange = function () {
+            if (req.readyState === 4) {
+                if (req.status === 200) {
+                    show_badge_text('#006400', 'OK', 2);
                 } else {
-                    // Lets blast the user with the response :)
-                    alert('Error: ' + req.responseText);
+                    var response = JSON.parse(req.responseText);
+                    if (response.errors) {
+                        alert('Error: ' + response.errors);
+                    } else {
+                        // Lets blast the user with the response :)
+                        alert('Error: ' + req.responseText);
+                    }
+                    show_badge_text('#ff0000', 'FAIL', 5);
                 }
-                show_badge_text('#ff0000', 'FAIL', 5);
+            }
+        };
+        return false;
+    },
+
+    // split_by_comma_list = function(value) {
+    //     if (!value) {
+    //         return [];
+    //     }
+    //     return value.split(',');
+    // },
+    // get_menu_devices = function() {
+    //     var devices = split_by_comma_list(localStorage.devices_menu);
+    //     if (!devices.length) {
+    //         devices = split_by_comma_list(localStorage.devices_all);
+    //     }
+    //     return devices;
+    // },
+
+    setup_context_menus = function () {
+        // var devices = get_menu_devices(),
+        var devices = ['Feishu Bot'],
+            ctxs = ['page', 'link', 'image', 'selection'];
+        chrome.contextMenus.removeAll();
+        if (devices.length) {
+            for (var j = 0; j < ctxs.length; j++) {
+                for (var i = 0; i < devices.length; i++) {
+                    chrome.contextMenus.create({
+                        'title': 'Push this ' + ctxs[j] + ' to ' + devices[i],
+                        'contexts': [ctxs[j]],
+                        'id': 'ctx:' + ctxs[j] + ':' + devices[i]
+                    });
+                }
             }
         }
     };
-    return false;
-},
 
-// split_by_comma_list = function(value) {
-//     if (!value) {
-//         return [];
-//     }
-//     return value.split(',');
-// },
-// get_menu_devices = function() {
-//     var devices = split_by_comma_list(localStorage.devices_menu);
-//     if (!devices.length) {
-//         devices = split_by_comma_list(localStorage.devices_all);
-//     }
-//     return devices;
-// },
-
-setup_context_menus = function() {
-    // var devices = get_menu_devices(),
-    var devices = ['Telegram Bot'],
-        ctxs = ['page', 'link', 'image', 'selection'];
-    chrome.contextMenus.removeAll();
-    if (devices.length) {
-        for(var j = 0; j < ctxs.length; j++) {
-            for (var i = 0; i < devices.length; i++) {
-                chrome.contextMenus.create({
-                    'title': 'Push this ' + ctxs[j] + ' to ' + devices[i],
-                    'contexts': [ctxs[j]],
-                    'id': 'ctx:' + ctxs[j] + ':' + devices[i]
-                });
-            }
-        }
-    }
-};
-
-chrome.browserAction.onClicked.addListener(function(tab) {
+chrome.browserAction.onClicked.addListener(function (tab) {
     chrome.tabs.sendRequest(tab.id, {
         method: 'selection'
-    }, function(text) {
+    }, function (text) {
         push_message('badge', tab, text);
     });
 });
 
-chrome.runtime.onMessage.addListener(function(request) {
+chrome.runtime.onMessage.addListener(function (request) {
     if (request && request.action == "reload-contextmenus") {
         setup_context_menus();
     }
 });
 
-chrome.contextMenus.onClicked.addListener(function(info, tab) {
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
     // var devices = get_menu_devices();
-    var devices = ['Telegram Bot'];
+    var devices = ['Feishu Bot'];
     if (devices.length) {
         for (var i = 0; i < devices.length; i++) {
             if (info.menuItemId === 'ctx:page:' + devices[i]) {
